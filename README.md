@@ -58,28 +58,6 @@ A smart shopping trolley that uses RFID/barcode scanning to identify products, u
 7. The customer can complete the payment using a UPI QR code.
 8. AI-powered suggestions can recommend alternative products, promotions, and cost-saving options.
 
-## Project Architecture
-
-```text
-                    Smart Shopping Trolley
-                             |
-              +--------------+--------------+
-              |                             |
-         Hardware Layer                Web Application
-              |                             |
-       Arduino UNO                  React + TypeScript
-              |                             |
-      +-------+-------+              +------+------+
-      |       |       |              |             |
-     RFID   LCD    Load Cell       Cart        AI Suggestions
-      |       |       |              |             |
-      +-------+-------+              +------+------+
-                                             |
-                                      Digital Billing
-                                             |
-                                      UPI QR Payment
-```
-
 ## Project Highlights
 
 * Real-time communication between the hardware trolley and web application.
