@@ -8,6 +8,8 @@ import SummaryCards from './components/SummaryCards';
 import ReceiptModal from './components/ReceiptModal';
 import LiveFeed from './components/LiveFeed';
 import HardwareSimulator from './components/HardwareSimulator';
+import HardwareConnector from './components/HardwareConnector';
+import ReactMarkdown from 'react-markdown';
 
 const App: React.FC = () => {
   const [items, setItems] = useState<TrolleyItem[]>([]);
@@ -27,16 +29,27 @@ const App: React.FC = () => {
     setSummary({ subtotal, totalGst, grandTotal });
   }, [items]);
 
-  // Handle incoming RFID data simulation
+  // Handle incoming RFID data from simulator or real hardware
   const handleProductScan = useCallback((productId: string) => {
-    const product = MOCK_PRODUCTS.find(p => p.id === productId);
-    if (!product) return;
+    // Clean ID (Hardware often sends extra whitespace)
+    const cleanId = productId.trim().toUpperCase();
+    
+    let product = MOCK_PRODUCTS.find(p => p.id === cleanId);
+    
+    // If not found, check if it's a known real-world tag format or create a placeholder
+    if (!product) {
+      console.warn(`Product with ID ${cleanId} not found in catalog.`);
+      // Create a "Smart Item" if we don't know the exact product
+      // This ensures the hardware scan is VISIBLE in the UI
+      product = {
+        id: cleanId,
+        name: `Unmapped Item (${cleanId.slice(-4)})`,
+        price: 99.00,
+        gstPercent: 12
+      };
+    }
 
-    // Simulate RFID scanning logic: 
-    // If the exact same scan was already 'Scanned', we remove it.
-    // In a real RFID system, each physical item has a unique Tag ID. 
-    // Here we simulate this by looking at existing items with same ID.
-    const existingIndex = items.findIndex(i => i.productId === productId && i.status === 'Scanned');
+    const existingIndex = items.findIndex(i => i.productId === cleanId && i.status === 'Scanned');
 
     if (existingIndex !== -1) {
       // Toggle to removed
@@ -98,6 +111,8 @@ const App: React.FC = () => {
             </div>
           </div>
           
+          <HardwareConnector onScan={handleProductScan} />
+
           {/* Simulation Controls - Strictly for demo/hardware simulation purposes */}
           <HardwareSimulator onScan={handleProductScan} />
         </div>
@@ -138,9 +153,11 @@ const App: React.FC = () => {
               <span className="bg-indigo-600 w-1.5 h-4 rounded-full"></span>
               Smart Assistant Recommendation
             </h4>
-            <div className="text-slate-600 text-sm whitespace-pre-wrap">
-              {aiSuggestion}
-            </div>
+            <div className="prose prose-sm max-w-none text-slate-700">
+  <ReactMarkdown>
+    {aiSuggestion ?? ""}
+  </ReactMarkdown>
+</div>
             <button onClick={() => setAiSuggestion(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>

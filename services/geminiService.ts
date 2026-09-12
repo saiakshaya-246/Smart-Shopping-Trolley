@@ -1,31 +1,68 @@
-
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { TrolleyItem } from "../types";
 
-export const getSmartSuggestions = async (items: TrolleyItem[]) => {
-  const activeItems = items.filter(i => i.status === 'Scanned');
-  if (activeItems.length === 0) return "Add some items to your trolley to get smart recipe suggestions!";
-
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-  const itemNames = activeItems.map(i => i.name).join(', ');
-
-  const prompt = `I have the following items in my shopping trolley: ${itemNames}. 
-  Suggest 2-3 quick recipes I can make with these or mention 1-2 items I might be missing to complete a popular dish. 
-  Keep it concise and formatted for a dashboard UI.`;
-
+export const getSmartSuggestions = async (
+  items: TrolleyItem[]
+): Promise<string> => {
   try {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return "❌ API key missing.";
+    }
+
+    const activeItems = items.filter(
+      (item) => item.status === "Scanned"
+    );
+
+    if (activeItems.length === 0) {
+      return "🛒 Add items to your trolley to get AI suggestions.";
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const itemNames = activeItems
+      .map((item) => item.name)
+      .join(", ");
+
+    const prompt = `
+You are an AI Shopping Assistant for a Smart Trolley.
+
+Customer's trolley contains:
+${itemNames}
+
+Generate shopping suggestions in Markdown.
+
+Use EXACTLY this format:
+
+**Alternative Products**
+- Suggest 2 cheaper or healthier alternatives.
+- Explain each in one sentence.
+
+**Smart Promotions**
+- Suggest 2 complementary products or bundle offers.
+- Explain why they pair well.
+
+**Cost Savings**
+- Suggest 2 or 3 practical ways to save money.
+
+Rules:
+- Start EVERY point with "- ".
+- Use bullet points only.
+- Keep each point under 25 words.
+- Don't use tables.
+- Don't add introductions or conclusions.
+- Return only the formatted Markdown.
+`;
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
-      config: {
-        temperature: 0.7,
-        topP: 0.95,
-      }
     });
 
-    return response.text || "No suggestions available at the moment.";
-  } catch (error) {
-    console.error("Gemini Error:", error);
-    return "Could not load smart suggestions. Check your internet connection.";
+    return response.text ?? "No suggestions available.";
+  } catch (err) {
+    console.error("Gemini Error:", err);
+    return "⚠️ AI suggestions are currently unavailable.";
   }
 };

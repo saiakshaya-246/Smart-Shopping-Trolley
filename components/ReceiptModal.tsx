@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { TrolleyItem, BillingSummary } from '../types';
 
 interface ReceiptModalProps {
@@ -9,6 +10,16 @@ interface ReceiptModalProps {
 }
 
 const ReceiptModal: React.FC<ReceiptModalProps> = ({ items, summary, onClose }) => {
+  const [paymentMethod, setPaymentMethod] = useState<'digital' | 'cash'>('digital');
+  const invoiceId = `INV-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+  const qrValue = JSON.stringify({
+    invoiceId,
+    total: summary.grandTotal,
+    itemsCount: items.length,
+    timestamp: new Date().toISOString(),
+    method: paymentMethod
+  });
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
@@ -23,10 +34,27 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ items, summary, onClose }) 
         </div>
 
         <div className="flex-1 p-8 overflow-y-auto">
-          <div className="text-center mb-8">
-            <p className="text-slate-400 text-sm mb-1 uppercase tracking-widest">Transaction Successful</p>
+          <div className="text-center mb-6">
+            <p className="text-slate-400 text-sm mb-1 uppercase tracking-widest">Checkout Summary</p>
             <h4 className="text-4xl font-bold text-slate-800">₹{summary.grandTotal.toFixed(2)}</h4>
-            <p className="text-xs text-slate-400 mt-2 mono">INV-{Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
+            <p className="text-xs text-slate-400 mt-2 mono">{invoiceId}</p>
+          </div>
+
+          <div className="flex gap-2 mb-8 p-1 bg-slate-100 rounded-xl">
+            <button 
+              onClick={() => setPaymentMethod('digital')}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${paymentMethod === 'digital' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+              Digital
+            </button>
+            <button 
+              onClick={() => setPaymentMethod('cash')}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${paymentMethod === 'cash' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+              Cash
+            </button>
           </div>
 
           <div className="space-y-4 mb-8">
@@ -58,10 +86,30 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ items, summary, onClose }) 
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-4">
-             <div className="w-32 h-32 bg-slate-100 rounded-xl flex items-center justify-center text-slate-300">
-                <svg className="w-20 h-20" fill="currentColor" viewBox="0 0 24 24"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm12 4c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-3 8c-1.91 0-3.53-1.03-4.43-2.56.39-.41.81-.73 1.25-.93.58.91 1.58 1.49 2.68 1.49s2.1-.58 2.68-1.49c.44.2.86.52 1.25.93C15.53 15.97 13.91 17 12 17z"/></svg>
-             </div>
-             <p className="text-center text-xs text-slate-400">Scan this QR code at the exit gate to finish your journey.</p>
+             {paymentMethod === 'digital' ? (
+               <>
+                 <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                    <QRCodeCanvas 
+                      value={qrValue} 
+                      size={128}
+                      level="H"
+                      includeMargin={false}
+                    />
+                 </div>
+                 <p className="text-center text-xs text-slate-400">Scan this QR code at the exit gate to finish your journey.</p>
+               </>
+             ) : (
+               <div className="w-full p-6 bg-blue-50 border border-blue-100 rounded-2xl text-center">
+                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                 </div>
+                 <h5 className="font-bold text-blue-900 mb-1">Cash Payment Required</h5>
+                 <p className="text-xs text-blue-700 leading-relaxed">
+                   Please proceed to <strong>Counter #4</strong> (Express Cashier). 
+                   Show this screen or the invoice ID to the cashier to complete your payment.
+                 </p>
+               </div>
+             )}
           </div>
         </div>
 
